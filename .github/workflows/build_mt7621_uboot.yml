@@ -52,7 +52,7 @@ jobs:
         run: |
           git clone --depth=1 $TOOLCHAIN_REPOSITORY_URL $TOOLCHAIN_WORK_PATH
 
-      - name: Download toolchain
+      - name: Download u-boot source code
         run: |
           git clone --depth=1 $UBOOT_REPOSITORY_URL $UBOOT_WORK_PATH
 
@@ -77,7 +77,7 @@ jobs:
         run: |
           cd $UBOOT_WORK_PATH
           mkdir -p archive
-          mv -f ./u-boot-mt7621.bin ./archive
+          mv -f ./u-boot-mt7621.bin ./archive/${{ github.event.inputs.target }}_u-boot-mt7621.bin
           cd ./archive
           echo "UBOOT=$PWD" >> $GITHUB_ENV
           echo "STATUS=success" >> $GITHUB_ENV
