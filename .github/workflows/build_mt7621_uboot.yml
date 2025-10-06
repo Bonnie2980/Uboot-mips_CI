@@ -1,0 +1,90 @@
+name: Build MT7621 u-boot
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'target to build'
+        required: true
+        type: choice
+        options:
+        - 'Q20'
+env:
+  UBOOT_REPOSITORY_URL: https://github.com/vb1980/Uboot-mips.git
+  UBOOT_WORK_PATH: /opt/Uboot-mips
+  TOOLCHAIN_REPOSITORY_URL: https://github.com/vb1980/buildroot-gcc1104_mips_glibc.git
+  TOOLCHAIN_WORK_PATH: /opt/buildroot-gcc1104_mips_glibc
+  TIME_ZONE: Asia/Shanghai
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.event.repository.owner.id == github.event.sender.id
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: Bonnie2980/variable-mapper@master
+        id: export
+        with:
+          key: "${{ github.event.inputs.target }}"
+          map: |
+            {
+              "Q20": {
+                "config": "u-boot_q20.config"
+              }
+            }
+          export_to: env
+          mode: first_match
+      - name: Install essential packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install swig
+          echo 'switch to python2 as default'
+          sudo rm /usr/bin/python
+          wget https://www.python.org/ftp/python/2.7.18/Python-2.7.18.tar.xz
+          tar -xJf Python-2.7.18.tar.xz
+          cd Python-2.7.18
+          ./configure && sudo make && sudo make install
+          sudo ln -s /usr/bin/python2 /usr/bin/python
+          sudo timedatectl set-timezone "$TIME_ZONE"
+
+      - name: Download toolchain
+        run: |
+          git clone --depth=1 $TOOLCHAIN_REPOSITORY_URL $TOOLCHAIN_WORK_PATH
+
+      - name: Download toolchain
+        run: |
+          git clone --depth=1 $UBOOT_REPOSITORY_URL $UBOOT_WORK_PATH
+
+      - name: Custom config
+        run: |
+          if [ ! -f configs/${{ env.config }} ] ; then
+            echo "configs/${{ env.config }} not found"
+            exit 1
+          fi
+          mv -f configs/${{ env.config }} $UBOOT_WORK_PATH/.config
+          echo "STATUS=success" >> $GITHUB_ENV
+
+      - name: Build
+        if: env.STATUS == 'success'
+        run: |
+          cd $UBOOT_WORK_PATH
+          make CROSS_COMPILE=$TOOLCHAIN_WORK_PATH/usr/bin/mipsel-linux-
+          echo "STATUS=success" >> $GITHUB_ENV
+
+      - name: Organize u-boot
+        if: env.STATUS == 'success'
+        run: |
+          cd $UBOOT_WORK_PATH
+          mkdir -p archive
+          mv -f ./u-boot-mt7621.bin ./archive
+          cd ./archive
+          echo "UBOOT=$PWD" >> $GITHUB_ENV
+          echo "STATUS=success" >> $GITHUB_ENV
+
+      - name: Upload u-boot
+        uses: actions/upload-artifact@main
+        if: env.STATUS == 'success'
+        with:
+          name: u-boot
+          path: ${{ env.UBOOT }}
