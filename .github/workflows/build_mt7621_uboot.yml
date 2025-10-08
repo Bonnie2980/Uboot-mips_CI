@@ -9,6 +9,9 @@ on:
         type: choice
         options:
         - 'Q20'
+        - 'XG1'
+        - 'CR660x'
+        - 'TX180x'
 env:
   UBOOT_REPOSITORY_URL: https://github.com/vb1980/Uboot-mips.git
   UBOOT_WORK_PATH: /opt/Uboot-mips
@@ -31,6 +34,15 @@ jobs:
             {
               "Q20": {
                 "config": "u-boot_q20.config"
+              },
+              "XG1": {
+                "config": "u-boot_xg1.config"
+              },
+              "CR660x": {
+                "config": "u-boot_cr660x.config"
+              },
+              "TX180x": {
+                "config": "u-boot_tx180x.config"
               }
             }
           export_to: env
